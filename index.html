@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Meus Lembretes</title>
+  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Lembretes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0f0f0f; --bg2:#181818; --bg3:#222; --bg4:#2a2a2a;
+      --border:rgba(255,255,255,.08); --border2:rgba(255,255,255,.14);
+      --text:#f0f0f0; --text2:#888; --text3:#555;
+      --accent:#d4f060; --accent-text:#1a2200;
+      --red:#ff5f5f; --amber:#f5a623; --green:#5dd87a; --blue:#5b9cf6;
+      --radius:14px; --radius-sm:8px;
+      --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:16px}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;max-width:480px;margin:0 auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    .app{display:flex;flex-direction:column;min-height:100dvh}
+    .header{padding:20px 20px 0;position:sticky;top:0;background:var(--bg);z-index:10;padding-top:max(20px,env(safe-area-inset-top))}
+    .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .app-title{font-size:22px;font-weight:600;letter-spacing:-.5px}
+    .app-title span{color:var(--accent)}
+    .date-badge{font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;padding:4px 10px}
+    .tabs{display:flex;gap:2px;background:var(--bg2);border-radius:var(--radius);padding:3px;margin-bottom:4px}
+    .tab{flex:1;border:none;background:none;color:var(--text2);font-family:var(--font);font-size:12px;font-weight:500;padding:8px 4px;border-radius:11px;cursor:pointer;transition:all .2s}
+    .tab.active{background:var(--bg3);color:var(--text)}
+    .content{flex:1;padding:16px 20px 100px;overflow-y:auto}
+    .tab-pane{display:none}
+    .tab-pane.active{display:block}
+    .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+    .metric-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+    .metric-label{font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+    .metric-val{font-size:28px;font-weight:600;letter-spacing:-1px}
+    .metric-val.accent{color:var(--accent)}
+    .metric-val.red{color:var(--red)}
+    .filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px;scrollbar-width:none}
+    .filters::-webkit-scrollbar{display:none}
+    .pill{white-space:nowrap;font-size:12px;font-weight:500;padding:5px 14px;border-radius:20px;border:0.5px solid var(--border);background:none;color:var(--text2);cursor:pointer;font-family:var(--font);transition:all .15s}
+    .pill.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+    .tasks{display:flex;flex-direction:column;gap:8px}
+    .task-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;gap:12px;align-items:flex-start;transition:opacity .2s;animation:fadeIn .2s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .task-card.done{opacity:.4}
+    .task-card.done .task-title{text-decoration:line-through}
+    .check-btn{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);background:none;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+    .check-btn.done{background:var(--green);border-color:var(--green);color:#0f2800}
+    .task-body{flex:1;min-width:0}
+    .task-title{font-size:14px;font-weight:500;margin-bottom:6px;line-height:1.4}
+    .task-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+    .tag{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px}
+    .tag-trabalho{background:rgba(91,156,246,.15);color:#5b9cf6}
+    .tag-pessoal{background:rgba(245,166,35,.12);color:#f5a623}
+    .tag-saude{background:rgba(93,216,122,.12);color:#5dd87a}
+    .tag-financeiro{background:rgba(212,240,96,.1);color:var(--accent)}
+    .tag-outros{background:rgba(255,255,255,.06);color:var(--text2)}
+    .tag-alta{background:rgba(255,95,95,.15);color:var(--red)}
+    .tag-media{background:rgba(245,166,35,.12);color:var(--amber)}
+    .tag-baixa{background:rgba(93,216,122,.1);color:var(--green)}
+    .tag-date{background:none;color:var(--text3);font-size:11px;padding:0}
+    .tag-notif{background:rgba(212,240,96,.1);color:var(--accent);font-size:11px;padding:2px 7px;border-radius:20px;font-family:var(--mono)}
+    .del-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:2px 4px;border-radius:6px;flex-shrink:0;transition:color .15s}
+    .del-btn:hover{color:var(--red)}
+    .empty{text-align:center;padding:48px 20px;color:var(--text3)}
+    .empty-icon{font-size:36px;margin-bottom:12px;opacity:.3}
+    .empty p{font-size:14px}
+    .form-group{margin-bottom:14px}
+    .form-label{font-size:12px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:block}
+    input[type=text],input[type=time],textarea,select{width:100%;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+    input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+    textarea{resize:none}
+    select option{background:var(--bg3)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{width:100%;padding:14px;border-radius:var(--radius);font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+    .btn-accent{background:var(--accent);color:var(--accent-text)}
+    .btn-accent:hover{filter:brightness(1.08)}
+    .btn-accent:active{transform:scale(.98)}
+    .btn-outline{background:none;border:0.5px solid var(--border2);color:var(--text2)}
+    .btn-ia{background:var(--bg3);color:var(--text);border:0.5px solid var(--border2)}
+    .btn-ia:active{transform:scale(.98)}
+    .btn+.btn{margin-top:10px}
+    .ia-result{margin-top:16px}
+    .ia-result-title{font-size:12px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+    .ia-task-preview{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px}
+    .ia-task-preview .task-title{font-size:13px;margin-bottom:5px}
+    .loading{display:none;align-items:center;gap:10px;font-size:13px;color:var(--text3);padding:12px 0}
+    .loading.show{display:flex}
+    .spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .resumo-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:18px;font-size:14px;line-height:1.75;color:var(--text);white-space:pre-wrap}
+    .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(15,15,15,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:0.5px solid var(--border);display:flex;padding:10px 20px max(10px,env(safe-area-inset-bottom));gap:4px;z-index:100}
+    .nav-btn{flex:1;background:none;border:none;color:var(--text3);font-family:var(--font);font-size:11px;font-weight:500;padding:8px 4px;cursor:pointer;border-radius:var(--radius-sm);display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .15s}
+    .nav-btn.active{color:var(--accent)}
+    .nav-icon{font-size:20px;line-height:1}
+    /* Notif banner */
+    .notif-banner{display:none;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;gap:12px;align-items:center}
+    .notif-banner.show{display:flex}
+    .notif-banner p{font-size:13px;color:var(--text2);flex:1;line-height:1.5}
+    .notif-banner p strong{color:var(--text)}
+    .notif-btn-sm{background:var(--accent);color:var(--accent-text);border:none;border-radius:var(--radius-sm);padding:8px 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+    .notif-status{display:flex;align-items:center;gap:8px;font-size:13px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:16px}
+    .notif-status.granted{background:rgba(93,216,122,.08);color:var(--green)}
+    .notif-status.denied{background:rgba(255,95,95,.08);color:var(--red)}
+    /* Install banner */
+    .install-banner{display:none;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;gap:12px;align-items:center}
+    .install-banner.show{display:flex}
+    .install-banner p{font-size:13px;color:var(--text2);flex:1;line-height:1.5}
+    .install-banner p strong{color:var(--text)}
+    .install-btn-sm{background:var(--bg4);color:var(--text);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 14px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
+    /* Notif config section */
+    .config-section{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+    .config-title{font-size:12px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+    .time-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .time-row label{font-size:13px;color:var(--text2);flex:1}
+    .time-row input[type=time]{width:120px;flex-shrink:0;padding:8px 10px;font-size:13px}
+    .time-remove{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px;line-height:1}
+    .time-remove:hover{color:var(--red)}
+    .add-time-btn{background:none;border:0.5px dashed var(--border2);border-radius:var(--radius-sm);color:var(--text3);font-family:var(--font);font-size:13px;padding:9px;width:100%;cursor:pointer;transition:all .15s;margin-top:4px}
+    .add-time-btn:hover{color:var(--text);border-color:var(--border2)}
+    .divider{height:0.5px;background:var(--border);margin:16px 0}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="app-title">Meus <span>Lembretes</span></div>
+      <div class="date-badge" id="date-badge"></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(0)">Hoje</button>
+      <button class="tab" onclick="switchTab(1)">Adicionar</button>
+      <button class="tab" onclick="switchTab(2)">Com IA</button>
+      <button class="tab" onclick="switchTab(3)">Resumo</button>
+      <button class="tab" onclick="switchTab(4)">Config</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB 0: HOJE -->
+    <div class="tab-pane active" id="pane0">
+      <div class="install-banner" id="install-banner">
+        <p><strong>Instalar app</strong><br>Adicione à tela inicial.</p>
+        <button class="install-btn-sm" id="install-btn-sm">Instalar</button>
+      </div>
+      <div class="notif-banner" id="notif-banner">
+        <p><strong>Ativar notificações</strong><br>Receba lembretes mesmo com o app fechado.</p>
+        <button class="notif-btn-sm" onclick="requestNotif()">Ativar</button>
+      </div>
+      <div class="metrics">
+        <div class="metric-card"><div class="metric-label">Pendentes</div><div class="metric-val accent" id="m-pend">0</div></div>
+        <div class="metric-card"><div class="metric-label">Urgentes</div><div class="metric-val red" id="m-urg">0</div></div>
+        <div class="metric-card"><div class="metric-label">Concluídas</div><div class="metric-val" id="m-done">0</div></div>
+        <div class="metric-card"><div class="metric-label">Total</div><div class="metric-val" id="m-total">0</div></div>
+      </div>
+      <div class="filters">
+        <button class="pill active" onclick="setFilter('todos',this)">Todos</button>
+        <button class="pill" onclick="setFilter('pendentes',this)">Pendentes</button>
+        <button class="pill" onclick="setFilter('alta',this)">Urgentes</button>
+        <button class="pill" onclick="setFilter('trabalho',this)">Trabalho</button>
+        <button class="pill" onclick="setFilter('pessoal',this)">Pessoal</button>
+        <button class="pill" onclick="setFilter('saude',this)">Saúde</button>
+        <button class="pill" onclick="setFilter('financeiro',this)">Financeiro</button>
+      </div>
+      <div class="tasks" id="task-list"></div>
+    </div>
+
+    <!-- TAB 1: ADICIONAR -->
+    <div class="tab-pane" id="pane1">
+      <div class="form-group">
+        <label class="form-label">Tarefa</label>
+        <input type="text" id="m-titulo" placeholder="O que você precisa fazer?" />
+      </div>
+      <div class="form-row form-group">
+        <div>
+          <label class="form-label">Categoria</label>
+          <select id="m-cat">
+            <option value="trabalho">Trabalho</option>
+            <option value="pessoal">Pessoal</option>
+            <option value="saude">Saúde</option>
+            <option value="financeiro">Financeiro</option>
+            <option value="outros">Outros</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Prioridade</label>
+          <select id="m-prio">
+            <option value="alta">🔴 Alta</option>
+            <option value="media" selected>🟡 Média</option>
+            <option value="baixa">🟢 Baixa</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row form-group">
+        <div>
+          <label class="form-label">Prazo</label>
+          <input type="text" id="m-prazo" placeholder="hoje, amanhã, 10/05..." />
+        </div>
+        <div>
+          <label class="form-label">Notificar às</label>
+          <input type="time" id="m-notif" />
+        </div>
+      </div>
+      <button class="btn btn-accent" onclick="addManual()">+ Adicionar tarefa</button>
+      <div id="add-feedback" style="display:none;text-align:center;padding:12px;font-size:13px;color:var(--green)">✓ Tarefa adicionada!</div>
+    </div>
+
+    <!-- TAB 2: COM IA -->
+    <div class="tab-pane" id="pane2">
+      <div class="form-group">
+        <label class="form-label">Descreva suas demandas em texto livre</label>
+        <textarea id="ia-input" rows="5" placeholder="Ex: Preciso ligar pro dentista amanhã de manhã às 9h, pagar a conta de luz até sexta com urgência, preparar apresentação do trabalho para hoje às 15h..."></textarea>
+      </div>
+      <button class="btn btn-ia" onclick="processarIA()">✦ Organizar com IA</button>
+      <div class="loading" id="ia-loading"><div class="spinner"></div>Analisando suas demandas...</div>
+      <div id="ia-preview"></div>
+    </div>
+
+    <!-- TAB 3: RESUMO -->
+    <div class="tab-pane" id="pane3">
+      <p style="font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.6">A IA analisa suas tarefas pendentes e gera um briefing do seu dia.</p>
+      <button class="btn btn-accent" onclick="gerarResumo()">✦ Gerar meu resumo do dia</button>
+      <div class="loading" id="res-loading" style="margin-top:14px"><div class="spinner"></div>Preparando seu resumo...</div>
+      <div id="resumo-output" style="margin-top:14px"></div>
+    </div>
+
+    <!-- TAB 4: CONFIG -->
+    <div class="tab-pane" id="pane4">
+      <div id="notif-status-box"></div>
+
+      <div class="config-section">
+        <div class="config-title">🔔 Horários de notificação diária</div>
+        <p style="font-size:13px;color:var(--text3);margin-bottom:14px;line-height:1.5">O app vai te notificar nestes horários com um resumo das tarefas pendentes do dia.</p>
+        <div id="daily-times-list"></div>
+        <button class="add-time-btn" onclick="addDailyTime()">+ Adicionar horário</button>
+        <div style="margin-top:14px">
+          <button class="btn btn-outline" style="font-size:13px;padding:10px" onclick="saveDailyTimes()">Salvar horários</button>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">🧪 Testar notificação</div>
+        <p style="font-size:13px;color:var(--text3);margin-bottom:12px;line-height:1.5">Envia uma notificação de teste agora para confirmar que está funcionando.</p>
+        <button class="btn btn-ia" style="font-size:13px;padding:11px" onclick="testNotif()">Enviar notificação de teste</button>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">🗑 Dados</div>
+        <button class="btn btn-outline" style="font-size:13px;padding:10px;color:var(--red);border-color:rgba(255,95,95,.3)" onclick="clearDone()">Limpar tarefas concluídas</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchTab(0)" id="nav0"><span class="nav-icon">☑</span>Hoje</button>
+  <button class="nav-btn" onclick="switchTab(1)" id="nav1"><span class="nav-icon">＋</span>Adicionar</button>
+  <button class="nav-btn" onclick="switchTab(2)" id="nav2"><span class="nav-icon">✦</span>Com IA</button>
+  <button class="nav-btn" onclick="switchTab(3)" id="nav3"><span class="nav-icon">◎</span>Resumo</button>
+  <button class="nav-btn" onclick="switchTab(4)" id="nav4"><span class="nav-icon">⚙</span>Config</button>
+</nav>
+
+<script>
+const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+let tasks = JSON.parse(localStorage.getItem('tasks_v2') || '[]');
+let dailyTimes = JSON.parse(localStorage.getItem('daily_times') || '["08:00"]');
+let activeFilter = 'todos';
+let swReg = null;
+
+function save() { localStorage.setItem('tasks_v2', JSON.stringify(tasks)); }
+function saveDTimes() { localStorage.setItem('daily_times', JSON.stringify(dailyTimes)); }
+
+// ── Date ───────────────────────────────────────────────────────────
+const now = new Date();
+document.getElementById('date-badge').textContent =
+  now.toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' });
+
+// ── Tabs ───────────────────────────────────────────────────────────
+function switchTab(i) {
+  document.querySelectorAll('.tab-pane').forEach((p,j) => p.classList.toggle('active', j===i));
+  document.querySelectorAll('.tab').forEach((t,j) => t.classList.toggle('active', j===i));
+  document.querySelectorAll('.nav-btn').forEach((b,j) => b.classList.toggle('active', j===i));
+  if (i===0) renderTasks();
+  if (i===4) renderConfig();
+}
+
+// ── Filter ─────────────────────────────────────────────────────────
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderTasks();
+}
+
+// ── Render tasks ───────────────────────────────────────────────────
+function renderTasks() {
+  let list = [...tasks];
+  if (activeFilter==='pendentes') list = list.filter(t => !t.done);
+  else if (activeFilter==='alta') list = list.filter(t => t.prio==='alta');
+  else if (['trabalho','pessoal','saude','financeiro'].includes(activeFilter)) list = list.filter(t => t.cat===activeFilter);
+  list.sort((a,b) => {
+    if (a.done!==b.done) return a.done?1:-1;
+    return ({alta:0,media:1,baixa:2}[a.prio]||1) - ({alta:0,media:1,baixa:2}[b.prio]||1);
+  });
+  const el = document.getElementById('task-list');
+  if (!list.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma tarefa aqui.</p></div>'; updateMetrics(); return; }
+  el.innerHTML = list.map(t => `
+    <div class="task-card ${t.done?'done':''}">
+      <button class="check-btn ${t.done?'done':''}" onclick="toggle(${t.id})">${t.done?'✓':''}</button>
+      <div class="task-body">
+        <div class="task-title">${esc(t.titulo)}</div>
+        <div class="task-tags">
+          <span class="tag tag-${t.cat}">${t.cat}</span>
+          <span class="tag tag-${t.prio}">${t.prio}</span>
+          ${t.prazo?`<span class="tag tag-date">📅 ${esc(t.prazo)}</span>`:''}
+          ${t.notifTime?`<span class="tag-notif">🔔 ${esc(t.notifTime)}</span>`:''}
+        </div>
+      </div>
+      <button class="del-btn" onclick="del(${t.id})">✕</button>
+    </div>`).join('');
+  updateMetrics();
+}
+
+function updateMetrics() {
+  const p = tasks.filter(t=>!t.done);
+  document.getElementById('m-total').textContent = tasks.length;
+  document.getElementById('m-pend').textContent = p.length;
+  document.getElementById('m-done').textContent = tasks.filter(t=>t.done).length;
+  document.getElementById('m-urg').textContent = p.filter(t=>t.prio==='alta').length;
+}
+
+function toggle(id) { tasks=tasks.map(t=>t.id===id?{...t,done:!t.done}:t); save(); renderTasks(); }
+function del(id) { tasks=tasks.filter(t=>t.id!==id); save(); renderTasks(); }
+function esc(s) { return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Add manual ─────────────────────────────────────────────────────
+function addManual() {
+  const titulo = document.getElementById('m-titulo').value.trim();
+  if (!titulo) { document.getElementById('m-titulo').focus(); return; }
+  tasks.unshift({
+    id: Date.now(),
+    titulo,
+    cat: document.getElementById('m-cat').value,
+    prio: document.getElementById('m-prio').value,
+    prazo: document.getElementById('m-prazo').value,
+    notifTime: document.getElementById('m-notif').value,
+    done: false
+  });
+  save();
+  document.getElementById('m-titulo').value='';
+  document.getElementById('m-prazo').value='';
+  document.getElementById('m-notif').value='';
+  const fb = document.getElementById('add-feedback');
+  fb.style.display='block';
+  setTimeout(()=>fb.style.display='none', 2000);
+  renderTasks();
+}
+
+// ── IA: extrair tarefas ────────────────────────────────────────────
+async function processarIA() {
+  const txt = document.getElementById('ia-input').value.trim();
+  if (!txt) return;
+  const loading = document.getElementById('ia-loading');
+  const prev = document.getElementById('ia-preview');
+  loading.classList.add('show'); prev.innerHTML='';
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{role:'user',content:
+        `Analise o texto e extraia as tarefas. Retorne APENAS um array JSON válido, sem markdown, sem explicação. Cada item: titulo (string), cat (trabalho|pessoal|saude|financeiro|outros), prio (alta|media|baixa), prazo (string curta), notifTime (HH:MM se mencionado horário, senão vazio).\n\nTexto: "${txt}"`
+      }]})
+    });
+    const data = await res.json();
+    const raw = data.content?.find(x=>x.type==='text')?.text || '[]';
+    const novas = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    loading.classList.remove('show');
+    if (!novas.length) { prev.innerHTML='<p style="color:var(--text3);font-size:13px">Nenhuma tarefa identificada.</p>'; return; }
+    const encoded = encodeURIComponent(JSON.stringify(novas));
+    prev.innerHTML = `<div class="ia-result">
+      <div class="ia-result-title">${novas.length} tarefa(s) identificada(s)</div>
+      ${novas.map(t=>`<div class="ia-task-preview">
+        <div class="task-title">${esc(t.titulo)}</div>
+        <div class="task-tags">
+          <span class="tag tag-${t.cat}">${t.cat}</span>
+          <span class="tag tag-${t.prio}">${t.prio}</span>
+          ${t.prazo?`<span class="tag tag-date">📅 ${esc(t.prazo)}</span>`:''}
+          ${t.notifTime?`<span class="tag-notif">🔔 ${esc(t.notifTime)}</span>`:''}
+        </div>
+      </div>`).join('')}
+      <button class="btn btn-accent" style="margin-top:4px" onclick="confirmarIA('${encoded}')">✓ Confirmar e adicionar</button>
+    </div>`;
+  } catch(e) {
+    loading.classList.remove('show');
+    prev.innerHTML='<p style="color:var(--red);font-size:13px">Erro ao processar. Tente novamente.</p>';
+  }
+}
+
+function confirmarIA(encoded) {
+  const novas = JSON.parse(decodeURIComponent(encoded));
+  novas.forEach(t => tasks.unshift({ id:Date.now()+Math.random(), titulo:t.titulo, cat:t.cat||'outros', prio:t.prio||'media', prazo:t.prazo||'', notifTime:t.notifTime||'', done:false }));
+  save();
+  document.getElementById('ia-input').value='';
+  document.getElementById('ia-preview').innerHTML='';
+  switchTab(0);
+}
+
+// ── IA: resumo ─────────────────────────────────────────────────────
+async function gerarResumo() {
+  const loading = document.getElementById('res-loading');
+  const out = document.getElementById('resumo-output');
+  loading.classList.add('show'); out.innerHTML='';
+  const pend = tasks.filter(t=>!t.done);
+  if (!pend.length) { loading.classList.remove('show'); out.innerHTML='<div class="resumo-card">Sem tarefas pendentes. Seu dia está livre! 🎉</div>'; return; }
+  const lista = pend.map(t=>`- ${t.titulo} [${t.cat}, prioridade ${t.prio}${t.prazo?', prazo: '+t.prazo:''}]`).join('\n');
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, messages:[{role:'user',content:
+        `Você é um assistente pessoal. Gere um briefing motivador do dia em português com base nas tarefas abaixo. Seja direto, organize por prioridade, sugira uma ordem de execução e encoraje o usuário no final. Máximo 200 palavras.\n\nTarefas:\n${lista}`
+      }]})
+    });
+    const data = await res.json();
+    const txt = data.content?.find(x=>x.type==='text')?.text || 'Erro ao gerar.';
+    loading.classList.remove('show');
+    out.innerHTML = `<div class="resumo-card">${txt}</div>`;
+  } catch(e) {
+    loading.classList.remove('show');
+    out.innerHTML='<div class="resumo-card" style="color:var(--red)">Erro ao conectar.</div>';
+  }
+}
+
+// ── Notifications ──────────────────────────────────────────────────
+async function requestNotif() {
+  if (!('Notification' in window)) { alert('Seu navegador não suporta notificações.'); return; }
+  const perm = await Notification.requestPermission();
+  document.getElementById('notif-banner').classList.remove('show');
+  if (perm==='granted') {
+    showNotifNow('✅ Notificações ativadas!', 'Você vai receber lembretes das suas tarefas.');
+  }
+  renderConfig();
+}
+
+function showNotifNow(title, body) {
+  if (Notification.permission!=='granted') return;
+  if (swReg) {
+    swReg.showNotification(title, { body, icon:'/icons/icon-192.png', badge:'/icons/icon-192.png' });
+  } else {
+    new Notification(title, { body, icon:'/icons/icon-192.png' });
+  }
+}
+
+function testNotif() {
+  if (Notification.permission!=='granted') { alert('Ative as notificações primeiro.'); return; }
+  const pend = tasks.filter(t=>!t.done);
+  const txt = pend.length ? `Você tem ${pend.length} tarefa(s) pendente(s).` : 'Sem tarefas pendentes hoje!';
+  showNotifNow('📋 Meus Lembretes', txt);
+}
+
+// Notify on open
+function notifyOnOpen() {
+  if (Notification.permission!=='granted') return;
+  const pend = tasks.filter(t=>!t.done);
+  if (!pend.length) return;
+  const urg = pend.filter(t=>t.prio==='alta');
+  const body = urg.length
+    ? `${pend.length} pendente(s) — ${urg.length} urgente(s): ${urg[0].titulo}${urg.length>1?'...':''}`
+    : `${pend.length} tarefa(s) pendente(s) para hoje.`;
+  showNotifNow('📋 Meus Lembretes', body);
+}
+
+// Periodic check every minute
+function startNotifLoop() {
+  setInterval(() => {
+    if (!swReg) return;
+    swReg.active?.postMessage({ type:'CHECK_TASKS', tasks });
+  }, 60000);
+}
+
+// ── Config ─────────────────────────────────────────────────────────
+function renderConfig() {
+  const box = document.getElementById('notif-status-box');
+  const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  if (perm==='granted') {
+    box.innerHTML='<div class="notif-status granted">🔔 Notificações ativadas</div>';
+  } else if (perm==='denied') {
+    box.innerHTML='<div class="notif-status denied">🔕 Notificações bloqueadas — habilite nas configurações do navegador</div>';
+  } else {
+    box.innerHTML=`<button class="btn btn-accent" style="margin-bottom:16px;font-size:14px" onclick="requestNotif()">🔔 Ativar notificações</button>`;
+  }
+
+  const list = document.getElementById('daily-times-list');
+  list.innerHTML = dailyTimes.map((t,i) => `
+    <div class="time-row">
+      <label>Horário ${i+1}</label>
+      <input type="time" value="${t}" onchange="dailyTimes[${i}]=this.value" />
+      <button class="time-remove" onclick="removeDailyTime(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addDailyTime() {
+  dailyTimes.push('09:00');
+  renderConfig();
+}
+function removeDailyTime(i) {
+  dailyTimes.splice(i,1);
+  renderConfig();
+}
+function saveDailyTimes() {
+  saveDTimes();
+  const btn = event.target;
+  btn.textContent='✓ Salvo!';
+  setTimeout(()=>btn.textContent='Salvar horários', 1800);
+}
+function clearDone() {
+  if (!confirm('Remover todas as tarefas concluídas?')) return;
+  tasks = tasks.filter(t=>!t.done);
+  save(); renderTasks();
+}
+
+// ── PWA install ────────────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
+});
+document.getElementById('install-btn-sm').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome==='granted') document.getElementById('install-banner').classList.remove('show');
+  deferredPrompt = null;
+});
+
+// ── SW + Notif check ───────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    swReg = reg;
+    startNotifLoop();
+  }).catch(()=>{});
+}
+
+// Show notif banner if not granted
+if ('Notification' in window && Notification.permission==='default') {
+  document.getElementById('notif-banner').classList.add('show');
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+renderTasks();
+// Notify on open after short delay
+setTimeout(notifyOnOpen, 2000);
+</script>
+</body>
+</html>
