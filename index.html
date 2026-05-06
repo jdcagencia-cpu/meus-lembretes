@@ -274,6 +274,7 @@
 
 <script>
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+    const API_KEY = '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';
 let tasks = JSON.parse(localStorage.getItem('tasks_v2') || '[]');
 let dailyTimes = JSON.parse(localStorage.getItem('daily_times') || '["08:00"]');
 let activeFilter = 'todos';
@@ -377,7 +378,7 @@ async function processarIA() {
   loading.classList.add('show'); prev.innerHTML='';
   try {
     const res = await fetch(CLAUDE_API, {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{role:'user',content:
         `Analise o texto e extraia as tarefas. Retorne APENAS um array JSON válido, sem markdown, sem explicação. Cada item: titulo (string), cat (trabalho|pessoal|saude|financeiro|outros), prio (alta|media|baixa), prazo (string curta), notifTime (HH:MM se mencionado horário, senão vazio).\n\nTexto: "${txt}"`
       }]})
@@ -426,7 +427,7 @@ async function gerarResumo() {
   const lista = pend.map(t=>`- ${t.titulo} [${t.cat}, prioridade ${t.prio}${t.prazo?', prazo: '+t.prazo:''}]`).join('\n');
   try {
     const res = await fetch(CLAUDE_API, {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, messages:[{role:'user',content:
         `Você é um assistente pessoal. Gere um briefing motivador do dia em português com base nas tarefas abaixo. Seja direto, organize por prioridade, sugira uma ordem de execução e encoraje o usuário no final. Máximo 200 palavras.\n\nTarefas:\n${lista}`
       }]})
